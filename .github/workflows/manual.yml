@@ -1,32 +1,48 @@
-# This is a basic workflow that is manually triggered
+name: POE
 
-name: Manual workflow
-
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-    # Inputs the workflow accepts.
-    inputs:
-      name:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Person to greet'
-        # Default value if no value is explicitly provided
-        default: 'World'
-        # Input has to be provided for the workflow to run
-        required: true
-        # The data type of the input
-        type: string
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
-    # The type of runner that the job will run on
+  build:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+      - uses: actions/checkout@v2
+
+      - name: List contents
+        run: ls
+
+      - name: Find Login.java
+        run: find . -name "Login.java"  # Search for Login.java recursively starting from the current directory
+
+      - name: compile classes
+        working-directory: ./src
+        run: javac -cp "../../testresources/junit-platform-console-standalone-1.6.0.jar" login/Login2.java login/LoginDetail.java login/Task.java login/TO_DO_LIST.java "../test/login/LoginTest.java" "../test/login/DetailTest.java" "../test/login/TaskTest.java" "../test/login/TO_DO_LISTTest.java"
+
+      - name: List contents of src directory after compile
+        working-directory: ./src/Login
+        run: ls
+
+      - name: copy compiled classes to testresources directory
+        working-directory: ./src/Login
+        run: cp -t "../../test/st2123456" Login2.class LoginDetail.class Task.class TO_DO_LIST.class
+
+      - name: copy compiled Test classes to testresources directory
+        working-directory: ./test/Login
+        run: cp -t "../../testresources/" LoginTest.class DetailTest.class TaskTest.class TO_DO_LISTTest.class
+
+      - name: List contents test package
+        working-directory: ./test/Login
+        run: ls
+
+      - name: run Messages Class tests and create report
+        working-directory: ./test
+        run: |
+          ls
+          java -jar "../testresources/junit-platform-console-standalone-1.6.0.jar" -cp "." --select-class Login.LoginDetailTest Login.TO_DO_LISTTest
+
